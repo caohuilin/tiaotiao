@@ -1,92 +1,117 @@
+/* eslint-disable react/no-danger */
+import { useState } from 'react';
 import { Helmet } from '@modern-js/runtime/head';
-import './index.css';
 
-const Index = () => (
-  <div className="container-box">
-    <Helmet>
-      <link
-        rel="icon"
-        type="image/x-icon"
-        href="https://lf3-static.bytednsdoc.com/obj/eden-cn/uhbfnupenuhf/favicon.ico"
-      />
-    </Helmet>
-    <main>
-      <div className="title">
-        Welcome to
-        <img
-          className="logo"
-          src="https://lf3-static.bytednsdoc.com/obj/eden-cn/zq-uylkvT/ljhwZthlaukjlkulzlp/modern-js-logo.svg"
-          alt="Modern.js Logo"
+import './css/index.scss';
+import './css/radio.scss';
+import './css/style.scss';
+import { BOOKS } from './constants/books';
+import {
+  DefaultBook,
+  DefaultFamilyName,
+  DefaultNameAmount,
+} from './constants/config';
+import { Book, NameObj, Namer } from './model/namer';
+
+const Index = () => {
+  const [bookKind, setBookKind] = useState(DefaultBook);
+  const [familyName, setFamilyName] = useState(DefaultFamilyName);
+  const [names, setNames] = useState<NameObj[]>([]);
+
+  // eslint-disable-next-line import/no-dynamic-require, @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const book: Book[] = require(`./json/${bookKind}.json`);
+
+  console.log(book);
+  console.log('nameObj', names);
+
+  const handleNamer = () => {
+    const namer = new Namer(book);
+    const names = [];
+    for (let i = 0; i < DefaultNameAmount; i++) {
+      names.push(namer.genName());
+    }
+    setNames(names);
+  };
+
+  return (
+    <div className="wrapper">
+      <Helmet>
+        <meta
+          name="description"
+          content="你的名字-用诗经 楚辞 唐诗 宋词起名字"
         />
-        <p className="name">Modern.js</p>
+        <meta name="keywords" content="起名,诗经,楚辞,唐诗,宋词" />
+        <title>你的名字-用诗经 楚辞 唐诗 宋词起名字</title>
+      </Helmet>
+      <div className="input-container">
+        <h3 className="title">
+          你的名字<small> 古诗文起名V2.0</small>
+        </h3>
+        <div className="book-selector">
+          {BOOKS.map(b => (
+            <div key={b.name} className="inputGroup">
+              <input
+                id={b.value}
+                name="book"
+                type="radio"
+                defaultChecked={b.value === bookKind}
+                onChange={() => setBookKind(b.value)}
+              />
+              <label htmlFor={b.value}>{b.name}</label>
+            </div>
+          ))}
+        </div>
+        <p className="family">
+          <label htmlFor="family-name">姓氏 </label>
+          <input
+            type="text"
+            name="family-name"
+            defaultValue={familyName}
+            placeholder="输入姓氏"
+            onChange={e => setFamilyName(e.target.value)}
+          />
+        </p>
+        <button className="btn-go" onClick={handleNamer}>
+          起名
+        </button>
       </div>
-      <p className="description">
-        Get started by editing <code className="code">src/routes/page.tsx</code>
-      </p>
-      <div className="grid">
-        <a
-          href="https://modernjs.dev/guides/get-started/introduction.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card"
-        >
-          <h2>
-            Guide
-            <img
-              className="arrow-right"
-              src="https://lf3-static.bytednsdoc.com/obj/eden-cn/zq-uylkvT/ljhwZthlaukjlkulzlp/arrow-right.svg"
-            />
-          </h2>
-          <p>Follow the guides to use all features of Modern.js.</p>
-        </a>
-        <a
-          href="https://modernjs.dev/tutorials/foundations/introduction.html"
-          target="_blank"
-          className="card"
-          rel="noreferrer"
-        >
-          <h2>
-            Tutorials
-            <img
-              className="arrow-right"
-              src="https://lf3-static.bytednsdoc.com/obj/eden-cn/zq-uylkvT/ljhwZthlaukjlkulzlp/arrow-right.svg"
-            />
-          </h2>
-          <p>Learn to use Modern.js to create your first application.</p>
-        </a>
-        <a
-          href="https://modernjs.dev/configure/app/usage.html"
-          target="_blank"
-          className="card"
-          rel="noreferrer"
-        >
-          <h2>
-            Config
-            <img
-              className="arrow-right"
-              src="https://lf3-static.bytednsdoc.com/obj/eden-cn/zq-uylkvT/ljhwZthlaukjlkulzlp/arrow-right.svg"
-            />
-          </h2>
-          <p>Find all configuration options provided by Modern.js.</p>
-        </a>
-        <a
-          href="https://github.com/web-infra-dev/modern.js"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="card"
-        >
-          <h2>
-            Github
-            <img
-              className="arrow-right"
-              src="https://lf3-static.bytednsdoc.com/obj/eden-cn/zq-uylkvT/ljhwZthlaukjlkulzlp/arrow-right.svg"
-            />
-          </h2>
-          <p>View the source code of Github, feel free to contribute.</p>
-        </a>
+      <div className="result">
+        <ul className="result-container">
+          {names.map(({ name, sentence, title, author, book, dynasty }) => {
+            return (
+              <li className="name-box" key={name}>
+                <h3>
+                  {familyName}
+                  {name}
+                </h3>
+                <p className="sentence">
+                  <span>「</span>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        sentence?.replace(
+                          new RegExp(`[${name}]`, 'ig'),
+                          char => `<i>${char}</i>`,
+                        ) || '',
+                    }}
+                  ></div>
+                  <span>」</span>
+                </p>
+                <div className="source-row">
+                  <div className="book">
+                    {book}&nbsp;•&nbsp;{title}
+                  </div>
+                  <div className="author">
+                    [{dynasty}]&nbsp;{author || '佚名'}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </main>
-  </div>
-);
+    </div>
+  );
+};
 
 export default Index;
