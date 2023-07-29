@@ -8,7 +8,9 @@ export interface Book {
   dynasty: string;
 }
 
-export type NameObj = Partial<Book & { name: string; sentence: string }>;
+export type NameObj = Partial<
+  Book & { name: string | undefined; sentence: string }
+>;
 
 export class Namer {
   book: Book[] | null = null;

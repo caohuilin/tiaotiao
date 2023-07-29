@@ -1,5 +1,5 @@
 /* eslint-disable react/no-danger */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from '@modern-js/runtime/head';
 
 import './css/index.scss';
@@ -10,6 +10,7 @@ import {
   DefaultBook,
   DefaultFamilyName,
   DefaultNameAmount,
+  LocalStarKey,
 } from './constants/config';
 import { Book, NameObj, Namer } from './model/namer';
 
@@ -17,20 +18,45 @@ const Index = () => {
   const [bookKind, setBookKind] = useState(DefaultBook);
   const [familyName, setFamilyName] = useState(DefaultFamilyName);
   const [names, setNames] = useState<NameObj[]>([]);
+  const [stars, setStars] = useState<string[]>([]);
 
   // eslint-disable-next-line import/no-dynamic-require, @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const book: Book[] = require(`./json/${bookKind}.json`);
 
-  console.log(book);
-  console.log('nameObj', names);
+  useEffect(() => {
+    const stars: string[] = JSON.parse(
+      localStorage.getItem(LocalStarKey) || '[]',
+    );
+    setStars(stars);
+
+    document.addEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleNamer = () => {
     const namer = new Namer(book);
     const names = [];
-    for (let i = 0; i < DefaultNameAmount; i++) {
-      names.push(namer.genName());
+    while (names.length < DefaultNameAmount) {
+      const nameObj = namer.genName();
+      if (nameObj.name) {
+        names.push(nameObj);
+      }
     }
     setNames(names);
+  };
+
+  const handleStar = (name: string) => {
+    if (stars.includes(name)) {
+      return;
+    }
+    const newStart = [...stars, name];
+    localStorage.setItem(LocalStarKey, JSON.stringify(newStart));
+    setStars(newStart);
+  };
+
+  const handleKeyDown = (event: any) => {
+    if (event.code === 'Enter') {
+      handleNamer();
+    }
   };
 
   return (
@@ -77,37 +103,43 @@ const Index = () => {
       </div>
       <div className="result">
         <ul className="result-container">
-          {names.map(({ name, sentence, title, author, book, dynasty }) => {
-            return (
-              <li className="name-box" key={name}>
-                <h3>
-                  {familyName}
-                  {name}
-                </h3>
-                <p className="sentence">
-                  <span>「</span>
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        sentence?.replace(
-                          new RegExp(`[${name}]`, 'ig'),
-                          char => `<i>${char}</i>`,
-                        ) || '',
-                    }}
-                  ></div>
-                  <span>」</span>
-                </p>
-                <div className="source-row">
-                  <div className="book">
-                    {book}&nbsp;•&nbsp;{title}
+          {names
+            .filter(n => Boolean(n) && n.name)
+            .map(({ name, sentence, title, author, book, dynasty }) => {
+              const allName = `${familyName}${name}`;
+              return (
+                <li
+                  className={`name-box ${
+                    stars.includes(allName) ? 'name-box-star' : ''
+                  }`}
+                  key={name}
+                  onClick={() => handleStar(allName)}
+                >
+                  <h3>{allName}</h3>
+                  <p className="sentence">
+                    <span>「</span>
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          sentence?.replace(
+                            new RegExp(`[${name}]`, 'ig'),
+                            char => `<i>${char}</i>`,
+                          ) || '',
+                      }}
+                    ></span>
+                    <span>」</span>
+                  </p>
+                  <div className="source-row">
+                    <div className="book">
+                      {book}&nbsp;•&nbsp;{title}
+                    </div>
+                    <div className="author">
+                      [{dynasty}]&nbsp;{author || '佚名'}
+                    </div>
                   </div>
-                  <div className="author">
-                    [{dynasty}]&nbsp;{author || '佚名'}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
+                </li>
+              );
+            })}
         </ul>
       </div>
     </div>
